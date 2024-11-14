@@ -15,28 +15,30 @@ router.post('/register', authorizeRole('admin'), async (req, res) => {
   // Validación de rol
   const userRole = role === 'admin' ? 'admin' : 'viewer'; // Solo 'admin' o 'viewer'
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  const query = `INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)`;
-  db.run(query, [username, hashedPassword, email, userRole], function (err) {
-    if (err) {
-      console.error("Error al registrar el usuario:", err.message);
-      return res.status(500).send("Error al registrar el usuario.");
-    }
-    res.status(201).send({ user_id: this.lastID, message: "Usuario registrado exitosamente" });
-  });
+    // Prepara y ejecuta la consulta de inserción
+    const query = `INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)`;
+    const insert = db.prepare(query);
+    const result = insert.run(username, hashedPassword, email, userRole);
+
+    res.status(201).send({ user_id: result.lastInsertRowid, message: "Usuario registrado exitosamente" });
+  } catch (err) {
+    console.error("Error al registrar el usuario:", err.message);
+    res.status(500).send("Error al registrar el usuario.");
+  }
 });
 
 // Inicio de sesión de usuario
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const query = `SELECT * FROM users WHERE username = ?`;
-  db.get(query, [username], async (err, user) => {
-    if (err) {
-      console.error("Error al obtener el usuario:", err.message);
-      return res.status(500).send("Error al iniciar sesión.");
-    }
+  try {
+    // Preparar y ejecutar la consulta de forma síncrona
+    const query = `SELECT * FROM users WHERE username = ?`;
+    const user = db.prepare(query).get(username);
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).send("Credenciales incorrectas.");
     }
@@ -49,55 +51,63 @@ router.post('/login', (req, res) => {
     );
 
     res.status(200).send({ token, message: "Inicio de sesión exitoso" });
-  });
+  } catch (err) {
+    console.error("Error al obtener el usuario:", err.message);
+    res.status(500).send("Error al iniciar sesión.");
+  }
 });
 
 // Obtener lista de usuarios (solo para admin)
 router.get('/users', authorizeRole('admin'), (req, res) => {
-  const query = `SELECT user_id, username, email, role FROM users`;
-  db.all(query, [], (err, rows) => {
-    if (err) {
-      console.error("Error al obtener usuarios:", err.message);
-      return res.status(500).send("Error al obtener usuarios.");
-    }
+  try {
+    const query = `SELECT user_id, username, email, role FROM users`;
+    const rows = db.prepare(query).all();  // Ejecuta la consulta de forma síncrona
     res.status(200).json(rows);
-  });
+  } catch (err) {
+    console.error("Error al obtener usuarios:", err.message);
+    res.status(500).send("Error al obtener usuarios.");
+  }
 });
 
-// modificar un usuario (solo para admin)
+// Modificar un usuario (solo para admin)
 router.put('/users/:user_id', authorizeRole('admin'), (req, res) => {
   const { user_id } = req.params;
   const { email, role } = req.body;
 
-  const query = `UPDATE users SET email = ?, role = ? WHERE user_id = ?`;
-  db.run(query, [email, role, user_id], function (err) {
-    if (err) {
-      console.error("Error al actualizar usuario:", err.message);
-      return res.status(500).send("Error al actualizar usuario.");
-    }
-    if (this.changes === 0) {
+  try {
+    const query = `UPDATE users SET email = ?, role = ? WHERE user_id = ?`;
+    const update = db.prepare(query);
+    const result = update.run(email, role, user_id);
+
+    if (result.changes === 0) {
       return res.status(404).send("Usuario no encontrado.");
     }
     res.status(200).send({ message: "Usuario actualizado exitosamente." });
-  });
+  } catch (err) {
+    console.error("Error al actualizar usuario:", err.message);
+    res.status(500).send("Error al actualizar usuario.");
+  }
 });
 
 // Eliminar un usuario (solo para admin)
 router.delete('/users/:user_id', authorizeRole('admin'), (req, res) => {
   const { user_id } = req.params;
 
-  const query = `DELETE FROM users WHERE user_id = ?`;
-  db.run(query, [user_id], function (err) {
-    if (err) {
-      console.error("Error al eliminar usuario:", err.message);
-      return res.status(500).send("Error al eliminar usuario.");
-    }
-    if (this.changes === 0) {
+  try {
+    const query = `DELETE FROM users WHERE user_id = ?`;
+    const deleteStmt = db.prepare(query);
+    const result = deleteStmt.run(user_id);
+
+    if (result.changes === 0) {
       return res.status(404).send("Usuario no encontrado.");
     }
     res.status(200).send({ message: "Usuario eliminado exitosamente." });
-  });
+  } catch (err) {
+    console.error("Error al eliminar usuario:", err.message);
+    res.status(500).send("Error al eliminar usuario.");
+  }
 });
+
 
 router.put('/users/changepassword', (req, res) => {
   console.log("Solicitud a change-password recibida sin autenticación"); // Log para verificar

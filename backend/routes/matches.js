@@ -9,18 +9,19 @@ router.use(connectMyTeamDb); // Aplica el middleware para conectar con la base d
 router.post('/create', authorizeRole('admin'), (req, res) => {
   const { team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details } = req.body;
 
-  req.teamDb.run(
-    `INSERT INTO matches (team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details],
-    function (err) {
-      if (err) {
-        console.error("Error al crear el partido:", err.message);
-        res.status(400).send("Error al crear el partido.");
-      } else {
-        res.status(201).send({ match_id: this.lastID });
-      }
-    }
-  );
+  try {
+    const query = `
+      INSERT INTO matches (team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    const insert = req.teamDb.prepare(query);
+    const result = insert.run(team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details);
+
+    res.status(201).send({ match_id: result.lastInsertRowid });
+  } catch (err) {
+    console.error("Error al crear el partido:", err.message);
+    res.status(400).send("Error al crear el partido.");
+  }
 });
 
 // Actualizar el resultado, fecha y/o número de jornada de un partido
@@ -72,82 +73,66 @@ router.put('/update/:match_id', authorizeRole('admin'), (req, res) => {
   values.push(match_id); // Agrega match_id para la condición WHERE
 
   const query = `UPDATE matches SET ${fieldsToUpdate.join(', ')} WHERE match_id = ?`;
-  req.teamDb.run(query, values, function (err) {
-    if (err) {
-      console.error("Error al actualizar el partido:", err.message);
-      return res.status(500).send("Error al actualizar el partido.");
-    }
-    if (this.changes === 0) {
+
+  try {
+    const update = req.teamDb.prepare(query);
+    const result = update.run(...values);
+
+    if (result.changes === 0) {
       return res.status(404).send("Partido no encontrado.");
     }
     res.status(200).send({ message: "Partido actualizado correctamente." });
-  });
+  } catch (err) {
+    console.error("Error al actualizar el partido:", err.message);
+    res.status(500).send("Error al actualizar el partido.");
+  }
 });
+
 
 // Eliminar un partido
 router.delete('/:match_id', authorizeRole('admin'), (req, res) => {
   const { match_id } = req.params;
 
-  const query1 = `DELETE FROM match_events WHERE match_id = ?`;
-  req.teamDb.run(query1, [match_id], function (err) {
-    if (err) {
-      console.error("Error al eliminar los eventos del partido:", err.message);
-      return res.status(500).send("Error al eliminar los eventos del partido.");
-    }
-    if (this.changes === 0) {
-      return res.status(404).send("Partido no encontrado.");
-    }
-  });
+  try {
+    // Eliminar eventos del partido
+    const deleteEvents = req.teamDb.prepare(`DELETE FROM match_events WHERE match_id = ?`);
+    const resultEvents = deleteEvents.run(match_id);
 
-  const query2 = `DELETE FROM convocatorias WHERE match_id = ?`;
-  req.teamDb.run(query2, [match_id], function (err) {
-    if (err) {
-      console.error("Error al eliminar los jugadores convocados del partido:", err.message);
-      return res.status(500).send("Error al eliminar los jugadores convocados del partido.");
-    }
-    if (this.changes === 0) {
-      return res.status(404).send("Partido no encontrado.");
-    }
-  });
+    // Eliminar jugadores convocados del partido
+    const deleteConvocations = req.teamDb.prepare(`DELETE FROM convocatorias WHERE match_id = ?`);
+    const resultConvocations = deleteConvocations.run(match_id);
 
-  const query3 = `DELETE FROM matches WHERE match_id = ?`;
-  req.teamDb.run(query3, [match_id], function (err) {
-    if (err) {
-      console.error("Error al eliminar el partido:", err.message);
-      return res.status(500).send("Error al eliminar el partido.");
-    }
-    if (this.changes === 0) {
+    // Eliminar el partido
+    const deleteMatch = req.teamDb.prepare(`DELETE FROM matches WHERE match_id = ?`);
+    const resultMatch = deleteMatch.run(match_id);
+
+    // Verificar si el partido fue encontrado
+    if (resultMatch.changes === 0) {
       return res.status(404).send("Partido no encontrado.");
     }
+
     res.status(200).send({ message: "Partido eliminado correctamente." });
-  });
+  } catch (err) {
+    console.error("Error al eliminar el partido o sus datos asociados:", err.message);
+    res.status(500).send("Error al eliminar el partido o sus datos asociados.");
+  }
 });
 
 // Obtener la clasificación
-router.get('/standings', async (req, res) => {
+router.get('/standings', (req, res) => {
   try {
     const myteam_id = req.session.myteam_id;
     if (!myteam_id) {
       return res.status(400).send("No hay equipo seleccionado.");
     }
+
     // Recupera todos los equipos junto con la información de si son favoritos
-    const teams = await new Promise((resolve, reject) => {
-      req.teamDb.all(`SELECT team_id, name, is_favorite FROM teams`, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+    const teams = req.teamDb.prepare(`SELECT team_id, name, is_favorite FROM teams`).all();
 
     // Recuperar todos los partidos con resultados anotados
-    const matches = await new Promise((resolve, reject) => {
-      req.teamDb.all(
-        `SELECT * FROM matches WHERE score_team_1 IS NOT NULL AND score_team_2 IS NOT NULL`,
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
+    const matches = req.teamDb.prepare(
+      `SELECT * FROM matches WHERE score_team_1 IS NOT NULL AND score_team_2 IS NOT NULL`
+    ).all();
 
     // Inicializar un objeto de clasificación para cada equipo
     const standings = teams.map(team => ({
@@ -216,31 +201,33 @@ router.get('/standings', async (req, res) => {
 
 // Obtener todos los partidos
 router.get('/', (req, res) => {
-  const query = `SELECT * FROM matches`;
-  req.teamDb.all(query, [], (err, rows) => {
-    if (err) {
-      console.error("Error al obtener los partidos:", err.message);
-      return res.status(500).send("Error al obtener los partidos.");
-    }
+  try {
+    const query = `SELECT * FROM matches`;
+    const rows = req.teamDb.prepare(query).all();
     res.status(200).json(rows);
-  });
+  } catch (err) {
+    console.error("Error al obtener los partidos:", err.message);
+    res.status(500).send("Error al obtener los partidos.");
+  }
 });
 
 // Obtener un partido específico por match_id
 router.get('/:match_id', (req, res) => {
   const { match_id } = req.params;
   const query = `SELECT * FROM matches WHERE match_id = ?`;
-  req.teamDb.get(query, [match_id], (err, row) => {
-    if (err) {
-      console.error("Error al obtener el partido:", err.message);
-      return res.status(500).send("Error al obtener el partido.");
-    }
+
+  try {
+    const row = req.teamDb.prepare(query).get(match_id);
     if (!row) {
       return res.status(404).send("Partido no encontrado.");
     }
     res.status(200).json(row);
-  });
+  } catch (err) {
+    console.error("Error al obtener el partido:", err.message);
+    res.status(500).send("Error al obtener el partido.");
+  }
 });
+
 
 // Obtener todos los partidos de un equipo específico por team_id
 router.get('/team/:team_id', (req, res) => {
@@ -249,30 +236,34 @@ router.get('/team/:team_id', (req, res) => {
     SELECT * FROM matches 
     WHERE team_1_id = ? OR team_2_id = ?
   `;
-  req.teamDb.all(query, [team_id, team_id], (err, rows) => {
-    if (err) {
-      console.error("Error al obtener los partidos del equipo:", err.message);
-      return res.status(500).send("Error al obtener los partidos del equipo.");
-    }
+
+  try {
+    const rows = req.teamDb.prepare(query).all(team_id, team_id);
     res.status(200).json(rows);
-  });
+  } catch (err) {
+    console.error("Error al obtener los partidos del equipo:", err.message);
+    res.status(500).send("Error al obtener los partidos del equipo.");
+  }
 });
+
 
 // Obtener todos los partidos de una jornada específica por round_number
 router.get('/round/:round_number', (req, res) => {
   const { round_number } = req.params;
   const query = `SELECT * FROM matches WHERE round_number = ?`;
-  req.teamDb.all(query, [round_number], (err, rows) => {
-    if (err) {
-      console.error("Error al obtener los partidos de la jornada:", err.message);
-      return res.status(500).send("Error al obtener los partidos de la jornada.");
-    }
+
+  try {
+    const rows = req.teamDb.prepare(query).all(round_number);
     if (rows.length === 0) {
       return res.status(404).send("No se encontraron partidos para esta jornada.");
     }
     res.status(200).json(rows);
-  });
+  } catch (err) {
+    console.error("Error al obtener los partidos de la jornada:", err.message);
+    res.status(500).send("Error al obtener los partidos de la jornada.");
+  }
 });
+
 
 // Añadir un gol para un jugador en un partido
 router.post('/:match_id/events/goal', authorizeRole('admin'), (req, res) => {
@@ -288,14 +279,15 @@ router.post('/:match_id/events/goal', authorizeRole('admin'), (req, res) => {
     VALUES (?, ?, 'GOAL', ?)
   `;
 
-  req.teamDb.run(query, [match_id, player_id, event_number], function (err) {
-    if (err) {
-      console.error("Error al registrar el gol:", err.message);
-      return res.status(500).send("Error al registrar el gol.");
-    }
-    res.status(201).send({ message: "Gol registrado con éxito", event_id: this.lastID });
-  });
+  try {
+    const result = req.teamDb.prepare(query).run(match_id, player_id, event_number);
+    res.status(201).send({ message: "Gol registrado con éxito", event_id: result.lastInsertRowid });
+  } catch (err) {
+    console.error("Error al registrar el gol:", err.message);
+    res.status(500).send("Error al registrar el gol.");
+  }
 });
+
 
 // Obtener todos los goles de un partido específico
 router.get('/:match_id/events/goals', (req, res) => {
@@ -308,32 +300,37 @@ router.get('/:match_id/events/goals', (req, res) => {
     WHERE match_events.match_id = ? AND match_events.event_type = 'GOAL'
   `;
 
-  req.teamDb.all(query, [match_id], (err, rows) => {
-    if (err) {
-      console.error("Error al obtener los goles del partido:", err.message);
-      return res.status(500).send("Error al obtener los goles del partido.");
-    }
+  try {
+    const rows = req.teamDb.prepare(query).all(match_id);
     res.status(200).json(rows);
-  });
+  } catch (err) {
+    console.error("Error al obtener los goles del partido:", err.message);
+    res.status(500).send("Error al obtener los goles del partido.");
+  }
 });
+
 
 // Eliminar un gol de un jugador en un partido
 router.delete('/:match_id/events/goal/:event_id', authorizeRole('admin'), (req, res) => {
   const { match_id, event_id } = req.params;
 
   const query = `DELETE FROM match_events WHERE match_id = ? AND event_id = ? AND event_type = 'GOAL'`;
-  
-  req.teamDb.run(query, [match_id, event_id], function (err) {
-    if (err) {
-      console.error("Error al eliminar el gol:", err.message);
-      return res.status(500).send("Error al eliminar el gol.");
-    }
-    if (this.changes === 0) {
+
+  try {
+    const stmt = req.teamDb.prepare(query);
+    const result = stmt.run(match_id, event_id);
+
+    if (result.changes === 0) {
       return res.status(404).send("Evento no encontrado.");
     }
+    
     res.status(200).send({ message: "Gol eliminado con éxito" });
-  });
+  } catch (err) {
+    console.error("Error al eliminar el gol:", err.message);
+    res.status(500).send("Error al eliminar el gol.");
+  }
 });
+
 
 // Obtener convocatoria de un partido
 router.get('/:match_id/convocatoria', (req, res) => {
@@ -344,39 +341,48 @@ router.get('/:match_id/convocatoria', (req, res) => {
     INNER JOIN convocatorias ON players.player_id = convocatorias.player_id
     WHERE convocatorias.match_id = ?
   `;
-  req.teamDb.all(query, [match_id], (err, rows) => {
-    if (err) {
-      res.status(500).send("Error al obtener la convocatoria.");
-    } else {
-      res.status(200).json(rows);
-    }
-  });
+  try {
+    const stmt = req.teamDb.prepare(query);
+    const rows = stmt.all(match_id);
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error("Error al obtener la convocatoria:", err.message);
+    res.status(500).send("Error al obtener la convocatoria.");
+  }
 });
 
 // Añadir jugador a la convocatoria
 router.post('/:match_id/convocatoria/:player_id', (req, res) => {
   const { match_id, player_id } = req.params;
   const query = `INSERT INTO convocatorias (match_id, player_id) VALUES (?, ?)`;
-  req.teamDb.run(query, [match_id, player_id], (err) => {
-    if (err) {
-      res.status(500).send("Error al añadir el jugador a la convocatoria.");
-    } else {
-      res.status(201).send("Jugador añadido a la convocatoria.");
-    }
-  });
+  try {
+    const stmt = req.teamDb.prepare(query);
+    stmt.run(match_id, player_id);
+    res.status(201).send("Jugador añadido a la convocatoria.");
+  } catch (err) {
+    console.error("Error al añadir el jugador a la convocatoria:", err.message);
+    res.status(500).send("Error al añadir el jugador a la convocatoria.");
+  }
 });
 
 // Eliminar jugador de la convocatoria
 router.delete('/:match_id/convocatoria/:player_id', (req, res) => {
   const { match_id, player_id } = req.params;
   const query = `DELETE FROM convocatorias WHERE match_id = ? AND player_id = ?`;
-  req.teamDb.run(query, [match_id, player_id], (err) => {
-    if (err) {
-      res.status(500).send("Error al eliminar el jugador de la convocatoria.");
-    } else {
-      res.status(200).send("Jugador eliminado de la convocatoria.");
+  try {
+    const stmt = req.teamDb.prepare(query);
+    const result = stmt.run(match_id, player_id);
+
+    if (result.changes === 0) {
+      return res.status(404).send("Jugador no encontrado en la convocatoria.");
     }
-  });
+    
+    res.status(200).send("Jugador eliminado de la convocatoria.");
+  } catch (err) {
+    console.error("Error al eliminar el jugador de la convocatoria:", err.message);
+    res.status(500).send("Error al eliminar el jugador de la convocatoria.");
+  }
 });
+
 
 module.exports = router;

@@ -1,7 +1,7 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 
 // Conecta a la base de datos
-const db = new sqlite3.Database('./main.db', (err) => {
+const db = new Database('./main.db', (err) => {
   if (err) {
     console.error('Error al conectar con la base de datos:', err.message);
     return;

@@ -1,10 +1,12 @@
-const sqlite3 = require('sqlite3').verbose();
-const mainDb = new sqlite3.Database('./main.db');
+// database.js
+const Database = require('better-sqlite3');
 
-mainDb.serialize(() => {
+// Crea una conexión a la base de datos usando better-sqlite3
+const mainDb = new Database('./main.db', { verbose: console.log });
+
   // Tabla de usuarios para autenticación
   console.log("Creando tabla users...");
-  mainDb.run(`
+  mainDb.exec(`
     CREATE TABLE IF NOT EXISTS users (
       user_id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -18,7 +20,7 @@ mainDb.serialize(() => {
 
   // Tabla para los conjuntos de datos de equipos propios del usuario
   console.log("Creando tabla myteams...");
-  mainDb.run(`
+  mainDb.exec(`
     CREATE TABLE IF NOT EXISTS myteams (
       myteam_id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,                -- Nombre del conjunto, e.g., "benjamín"
@@ -30,6 +32,5 @@ mainDb.serialize(() => {
   console.log("Tabla myteams creada.");
 
   console.log("Tablas en main.db creadas o ya existen.");
-});
 
 module.exports = mainDb;
