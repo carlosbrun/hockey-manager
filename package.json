@@ -1,19 +1,4 @@
 {
-<<<<<<< HEAD
-  "name": "hockey-team-manager",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "concurrently": "^9.0.1"
-  }
-=======
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
@@ -61,5 +46,4 @@
     "not dead",
     "not ie 11"
   ]
->>>>>>> bfd16d9 (Agregar cambios del submódulo frontend)
 }
