@@ -20,6 +20,14 @@ app.use(cors({
   origin: process.env.FRONTEND_URL, // Reemplaza con el dominio de tu frontend
   credentials: true
 }));
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL, // Reemplaza con tu URL de GitHub Pages
+  credentials: true, // Permite enviar cookies o encabezados de autorización
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos HTTP permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // Headers permitidos
+}));
+
 app.use('/uploads', express.static('uploads')); // Servir archivos de la carpeta de fotos
 app.use(session({
   secret: 'GJhhgdydy73892.32233-', // Cambia esto por una clave secreta para tu aplicación
@@ -27,8 +35,7 @@ app.use(session({
   saveUninitialized: true,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'None'
   }
 }));
 
