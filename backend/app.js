@@ -16,10 +16,6 @@ console.log(`Entorno de ejecución: ${process.env.NODE_ENV}`);
 const app = express();
 app.use(bodyParser.json());
 // Configuración de CORS con credenciales
-app.use(cors({
-  origin: process.env.FRONTEND_URL, // Reemplaza con el dominio de tu frontend
-  credentials: true
-}));
 
 app.use(cors({
   origin: process.env.FRONTEND_URL, // Reemplaza con tu URL de GitHub Pages

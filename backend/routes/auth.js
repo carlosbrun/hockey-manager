@@ -49,6 +49,12 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
+	
+	res.cookie('token', token, {
+	  httpOnly: true,
+	  secure: process.env.NODE_ENV === 'production', // Solo en producción
+	  sameSite: 'None', // Necesario para solicitudes entre dominios
+	 });
 
     res.status(200).send({ token, message: "Inicio de sesión exitoso" });
   } catch (err) {
