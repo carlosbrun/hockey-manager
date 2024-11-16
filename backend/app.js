@@ -6,15 +6,18 @@ const jwt = require('jsonwebtoken');
 const db = require('./database');
 const session = require('express-session');
 
-require('dotenv').config();
+require('dotenv').config({
+  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
+});
 
 console.log("Servidor Express iniciándose...");
+console.log(`Entorno de ejecución: ${process.env.NODE_ENV}`);
 
 const app = express();
 app.use(bodyParser.json());
 // Configuración de CORS con credenciales
 app.use(cors({
-  origin: process.env.SERVER_URL+':'+process.env.SERVER_PORT, // Reemplaza con el dominio de tu frontend
+  origin: process.env.FRONTEND_URL, // Reemplaza con el dominio de tu frontend
   credentials: true
 }));
 app.use('/uploads', express.static('uploads')); // Servir archivos de la carpeta de fotos
@@ -22,7 +25,11 @@ app.use(session({
   secret: 'GJhhgdydy73892.32233-', // Cambia esto por una clave secreta para tu aplicación
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // Asegúrate de que esté en `true` solo en producción con HTTPS
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'strict',
+  }
 }));
 
 // Importa las rutas
