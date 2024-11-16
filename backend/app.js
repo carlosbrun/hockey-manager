@@ -24,7 +24,6 @@ app.use(cors({
 app.use(cors({
   origin: process.env.FRONTEND_URL, // Reemplaza con tu URL de GitHub Pages
   credentials: true, // Permite enviar cookies o encabezados de autorización
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos HTTP permitidos
   allowedHeaders: ['Content-Type', 'Authorization'], // Headers permitidos
 }));
 
