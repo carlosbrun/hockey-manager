@@ -33,6 +33,39 @@ router.post('/select', (req, res) => {
   });
 });
 
+router.post('/select', (req, res) => {
+	const { myteam_id } = req.body;
+
+	if (!myteam_id) {
+		return res.status(400).send("myteam_id es necesario para seleccionar el equipo.");
+	}
+
+	// Decodificar el token actual del usuario para obtener sus datos
+	const authHeader = req.headers['authorization'];
+	const token = authHeader && authHeader.split(' ')[1];
+
+	if (!token) {
+		return res.status(401).send("No se proporcionó un token.");
+	}
+
+	jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).send("Token inválido.");
+    }
+
+    // Agregar myteam_id al payload del token
+    const newPayload = { ...user, myteam_id };
+
+    // Generar un nuevo token con el valor actualizado
+    const newToken = jwt.sign(newPayload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.status(200).send({
+      token: newToken,
+      message: `Conjunto de equipos ${myteam_id} seleccionado.`,
+    });
+  });
+});
+
 // Crear un nuevo conjunto de equipos con su propia base de datos
 router.post('/create', authorizeRole('admin'), (req, res) => {
   console.log("Solicitud recibida en POST /myteams/create");
