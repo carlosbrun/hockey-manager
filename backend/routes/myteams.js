@@ -7,33 +7,6 @@ const mainDb = require('../database');
 const authorizeRole = require('../middlewares/authorizeRole');
 
 router.post('/select', (req, res) => {
-  const { myteam_id } = req.body;
-
-  if (!myteam_id) {
-    return res.status(400).send("myteam_id es necesario para seleccionar el equipo.");
-  }
-
-  // Guarda el myteam_id
-  req.myteam_id = myteam_id;
-  console.log(`Conjunto de equipos ${myteam_id} seleccionado`);
-  
-  // Establecer la cookie con el valor de myteam_id
-  res.cookie('myteam_id', myteam_id, {
-    httpOnly: true, // Para evitar que JavaScript en el cliente acceda a la cookie
-    secure: process.env.NODE_ENV === 'production', // Solo usar en HTTPS en producción
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Para proteger contra CSRF
-  });
-  
-  console.log(`Cookie establecida: myteam_id=${myteam_id}`);
-
-  res.status(200).send({
-    message: `Conjunto de equipos ${myteam_id} seleccionado`,
-    session: req.session,
-	  myteam_id: req.myteam_id
-  });
-});
-
-router.post('/select', (req, res) => {
 	const { myteam_id } = req.body;
 
 	if (!myteam_id) {
