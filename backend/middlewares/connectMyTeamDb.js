@@ -1,6 +1,7 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 const mainDb = require('../database');
+const jwt = require('jsonwebtoken');
 
 function connectMyTeamDb(req, res, next) {
   const authHeader = req.headers['authorization'];

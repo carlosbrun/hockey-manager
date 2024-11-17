@@ -5,6 +5,7 @@ const path = require('path');
 const router = express.Router();
 const mainDb = require('../database');
 const authorizeRole = require('../middlewares/authorizeRole');
+const jwt = require('jsonwebtoken');
 
 router.post('/select', (req, res) => {
 	const { myteam_id } = req.body;
