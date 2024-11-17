@@ -21,7 +21,7 @@ router.post('/select', (req, res) => {
   res.cookie('myteam_id', myteam_id, {
     httpOnly: true, // Para evitar que JavaScript en el cliente acceda a la cookie
     secure: process.env.NODE_ENV === 'production', // Solo usar en HTTPS en producción
-    sameSite: 'Lax' // Para proteger contra CSRF
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Para proteger contra CSRF
   });
   
   console.log(`Cookie establecida: myteam_id=${myteam_id}`);

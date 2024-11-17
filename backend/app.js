@@ -32,7 +32,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
     httpOnly: true, // Previene acceso a cookies vía JavaScript
-    sameSite: 'Lax', // Protege contra ataques CSRF
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Protege contra ataques CSRF
   }
 }));
 
