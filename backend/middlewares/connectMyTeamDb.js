@@ -8,15 +8,18 @@ function connectMyTeamDb(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    console.log("Token no proporcionado.");
     return res.status(401).send("Token no proporcionado.");
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
+      console.log(`Token inválido.`);
       return res.status(403).send("Token inválido.");
     }
 
     const myteam_id = decoded.myteam_id;
+    console.log(`Token - myteam_id: ${decoded.myteam_id}`);
 
     if (!myteam_id) {
       return res.status(400).send("No se ha seleccionado un conjunto de equipos.");

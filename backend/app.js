@@ -45,14 +45,11 @@ const myteamsRoutes = require('./routes/myteams'); // Importa myteams.js
 
 console.log("Rutas importadas...");
 
-const authenticateToken = require('./middlewares/authenticateToken');
-const connectMyTeamDb = require('./middlewares/connectMyTeamDb');
-
-app.use('/auth', authenticateToken, connectMyTeamDb, authRoutes);
-app.use('/players', authenticateToken, connectMyTeamDb, playerRoutes);
-app.use('/matches', authenticateToken, connectMyTeamDb, matchRoutes);
-app.use('/teams', authenticateToken, connectMyTeamDb, teamRoutes);
-app.use('/myteams', authenticateToken, connectMyTeamDb, myteamsRoutes); // Configura myteams.js
+app.use('/auth', authRoutes);
+app.use('/players', playerRoutes);
+app.use('/matches', matchRoutes);
+app.use('/teams', teamRoutes);
+app.use('/myteams', myteamsRoutes); // Configura myteams.js
 
 console.log("Rutas configuradas...");
 
