@@ -28,7 +28,7 @@ router.post('/select', (req, res) => {
     }
 
     // Agregar myteam_id al payload del token
-    const newPayload = { ...user, myteam_id, exp: Math.floor(Date.now() / 1000) + 3600 }; // Expira en 1 hora
+    const newPayload = { user_id: user.user_id, role: user.role, myteam_id: myteam_id, exp: Math.floor(Date.now() / 1000) + 3600 }; // Expira en 1 hora
 
     // Generar un nuevo token con el valor actualizado
     const newToken = jwt.sign(newPayload, process.env.JWT_SECRET); 
