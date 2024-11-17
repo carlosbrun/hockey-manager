@@ -13,8 +13,8 @@ router.post('/select', (req, res) => {
     return res.status(400).send("myteam_id es necesario para seleccionar el equipo.");
   }
 
-  // Guarda el myteam_id en la sesión
-  req.session.myteam_id = myteam_id;
+  // Guarda el myteam_id
+  req.myteam_id = myteam_id;
   console.log(`Conjunto de equipos ${myteam_id} seleccionado`);
   
   // Establecer la cookie con el valor de myteam_id
@@ -28,7 +28,8 @@ router.post('/select', (req, res) => {
 
   res.status(200).send({
     message: `Conjunto de equipos ${myteam_id} seleccionado`,
-    session: req.session // Confirmar que la sesión contiene myteam_id
+    session: req.session,
+	  myteam_id: req.myteam_id
   });
 });
 

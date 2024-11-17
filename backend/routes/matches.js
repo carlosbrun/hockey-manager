@@ -121,11 +121,6 @@ router.delete('/:match_id', authorizeRole('admin'), (req, res) => {
 // Obtener la clasificación
 router.get('/standings', (req, res) => {
   try {
-    const myteam_id = req.session.myteam_id;
-    if (!myteam_id) {
-      return res.status(400).send("No hay equipo seleccionado.");
-    }
-
     // Recupera todos los equipos junto con la información de si son favoritos
     const teams = req.teamDb.prepare(`SELECT team_id, name, is_favorite FROM teams`).all();
 

@@ -3,7 +3,7 @@ const Database = require('better-sqlite3');
 const mainDb = require('../database');
 
 function connectMyTeamDb(req, res, next) {
-   const myteam_id = 1;
+   const myteam_id = req.myteam_id || req.cookies.myteam_id;
   
   if (!myteam_id) {
     return res.status(400).send("No se ha seleccionado un conjunto de equipos.");
