@@ -17,7 +17,10 @@ router.post('/select', (req, res) => {
   req.session.myteam_id = myteam_id;
   console.log(`Conjunto de equipos ${myteam_id} seleccionado`);
 
-  res.status(200).send({ message: `Conjunto de equipos ${myteam_id} seleccionado` });
+  res.status(200).send({
+    message: `Conjunto de equipos ${myteam_id} seleccionado`,
+    session: req.session // Confirmar que la sesión contiene myteam_id
+  });
 });
 
 // Crear un nuevo conjunto de equipos con su propia base de datos

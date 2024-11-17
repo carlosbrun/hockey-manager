@@ -24,13 +24,15 @@ app.use(cors({
 }));
 
 app.use('/uploads', express.static('uploads')); // Servir archivos de la carpeta de fotos
+
 app.use(session({
-  secret: 'GJhhgdydy73892.32233-', // Cambia esto por una clave secreta para tu aplicación
+  secret: 'GJhhgdydy73892.32233-',
   resave: false,
   saveUninitialized: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'None'
+    secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
+    httpOnly: true, // Previene acceso a cookies vía JavaScript
+    sameSite: 'Lax', // Protege contra ataques CSRF
   }
 }));
 
