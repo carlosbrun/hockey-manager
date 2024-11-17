@@ -16,6 +16,15 @@ router.post('/select', (req, res) => {
   // Guarda el myteam_id en la sesión
   req.session.myteam_id = myteam_id;
   console.log(`Conjunto de equipos ${myteam_id} seleccionado`);
+  
+  // Establecer la cookie con el valor de myteam_id
+  res.cookie('myteam_id', myteam_id, {
+    httpOnly: true, // Para evitar que JavaScript en el cliente acceda a la cookie
+    secure: process.env.NODE_ENV === 'production', // Solo usar en HTTPS en producción
+    sameSite: 'Lax' // Para proteger contra CSRF
+  });
+  
+  console.log(`Cookie establecida: myteam_id=${myteam_id}`);
 
   res.status(200).send({
     message: `Conjunto de equipos ${myteam_id} seleccionado`,
