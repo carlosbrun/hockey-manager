@@ -49,6 +49,11 @@
           <label for="phone">Teléfono</label>
           <input type="text" v-model="team.phone" id="phone" />
         </div>
+
+        <div class="form-group">
+        <label>Marcar como equipo favorito</label>
+        <input v-model="team.is_favorite" type="checkbox" :value="1" :false-value="0" id="fav-checkbox"/>
+        </div>
   
         <button type="submit" class="submit-button">Actualizar Equipo</button>
       </form>
@@ -76,6 +81,9 @@
       try {
         const response = await api.get(`/teams/${teamId}`);
         this.team = response.data;
+
+        // Asegurarse de que el checkbox refleje correctamente el estado
+        this.team.is_favorite = !!this.team.is_favorite;
       } catch (error) {
         console.error("Error al cargar los datos del equipo:", error);
         alert("No se pudieron cargar los datos del equipo.");
@@ -95,7 +103,13 @@
         formData.append('address', this.team.address);
         formData.append('phone', this.team.phone);
         if (this.logoFile) {
-          formData.append('logo', this.logoFile);
+          formData.append('logo_path', this.logoFile);
+        }
+
+        if (this.team.is_favorite) {
+          formData.append('is_favorite', 1);
+        } else {
+          formData.append('is_favorite', 0);
         }
   
         try {
@@ -108,7 +122,8 @@
           this.$router.push('/dashboard/teams');
         } catch (error) {
           console.error('Error al actualizar el equipo:', error);
-          alert('No se pudo actualizar el equipo');
+          const errorMessage = error.response?.data || 'No se pudo actualizar el equipo.';
+          alert(errorMessage);
         }
       }
     }
@@ -162,6 +177,10 @@
   
   .submit-button:hover {
     background-color: #45a049;
+  }
+
+  #fav-checkbox {
+    width: fit-content;
   }
   </style>
   

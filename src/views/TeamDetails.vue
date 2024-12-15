@@ -25,10 +25,15 @@
     </div>
     <div class="team-details">
       <div class="header">
-        <h2>{{ team.name }}</h2>
-        <button @click="editTeam" class="edit-team-button">
-          <span class="material-icons">edit</span>
-        </button>
+        <h2 class="header-title">{{ team.name }}</h2>
+        <div class="header-buttons">
+          <button v-if="isAdmin" @click="editTeam" class="edit-button">
+            <span class="material-icons">edit</span>
+          </button>
+          <button v-if="isAdmin" @click="confirmDelete" class="delete-button">
+            <span class="material-icons">delete</span>
+          </button>
+        </div>
       </div>
       <div class="box-data">
         <img v-if="team.logo_path" :src="`${apiUrl}${team.logo_path}`" alt="Escudo del equipo" class="team-logo-large" />
@@ -48,17 +53,25 @@
   <script>
   import api from '../services/api';
   import MapComponent from './MapComponent.vue';
+  import { jwtDecode } from 'jwt-decode';
   
   export default {
     components: { MapComponent },
     data() {
       return {
         team: {},
+        isAdmin: false,
         apiUrl: process.env.VUE_APP_API_URL
       };
     },
     async created() {
       const teamId = this.$route.params.team_id;
+      const token = localStorage.getItem('token');
+      if (token) {
+        const decodedToken = jwtDecode(token);
+        this.isAdmin = decodedToken.role === 'admin';
+      }
+
       try {
         const response = await api.get(`/teams/${teamId}`);
         this.team = response.data;
@@ -76,6 +89,21 @@
     methods: {
         editTeam() {
           this.$router.push(`/teams/edit/${this.team.team_id}`); // Redirige a la vista de edición del equipo
+        },
+        confirmDelete() {
+          if (confirm('¿Estás seguro de que deseas eliminar este equipo? Esta acción no se puede deshacer.')) {
+            this.deleteTeam();
+          }
+        },
+        async deleteTeam() {
+          try {
+            await api.delete(`/teams/${this.team.team_id}`);
+            alert('Equipo eliminado con éxito');
+            this.$router.push('/dashboard/teams');
+          } catch (error) {
+            console.error('Error al eliminar el equipo:', error);
+            alert('No se pudo eliminar el equipo');
+          }
         },
         navigateTo(tab) {
             this.activeTab = tab;

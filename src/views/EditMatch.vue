@@ -91,6 +91,11 @@
                 <label for="details">Detalles Adicionales</label>
                 <textarea v-model="match.details" placeholder="Detalles del partido"></textarea>
             </div>
+
+            <div>
+                <label for="instagram_post">URL de Instagram</label>
+                <input type="text" v-model="match.instagram_post" placeholder="Post de Instagram" />
+            </div>
         </div>
          <!-- Contenido de la Pestaña Goles -->
         <div v-if="activeTab === 'goles'" class="tab-content goals-section">
@@ -183,7 +188,8 @@
         team_2_id: '',
         score_team_1: null,
         score_team_2: null,
-        details: ''
+        details: '',
+        instagram_post: ''
       },
       teams: [],
       players: [],
@@ -337,8 +343,9 @@
           alert('Partido actualizado con éxito');
           this.$router.push('/dashboard/results');
         } catch (error) {
+          const errorMessage = error.response?.data || 'Error al actualizar el partido';
+          alert(errorMessage);
           console.error('Error al actualizar el partido:', error);
-          alert('No se pudo actualizar el partido');
         }
       }
     }

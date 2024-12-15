@@ -1,8 +1,12 @@
 <template>
   <div class="results-page">
     <div class="header">
-      <h2>Resultados</h2>
-      <button v-if="isAdmin" @click="createMatch" class="create-match-button">Crear Partido</button>
+      <h2 class="header-title">Resultados</h2>
+      <div class="header-buttons">
+        <button v-if="isAdmin" @click="createMatch" class="create-button">
+          <span class="material-icons">add</span>
+        </button>
+      </div>
     </div>
 
     <div v-for="(group, index) in groupedMatches" :key="index" class="jornada-section">

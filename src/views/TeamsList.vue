@@ -1,8 +1,12 @@
 <template>
     <div class="teams-list">
       <div class="header">
-        <h2>Equipos</h2>
-        <button @click="createTeam" class="create-team-button">Crear Equipo</button>
+        <h2 class="header-title">Equipos</h2>
+        <div class="header-buttons">
+          <button v-if="isAdmin" @click="createTeam" class="create-button">
+            <span class="material-icons">add</span>
+          </button>
+        </div>
       </div>
       <div class="teams-container">
         <div v-for="team in teams" :key="team.team_id" class="team-card" @click="viewTeamDetails(team.team_id)">
@@ -16,11 +20,13 @@
   
   <script>
   import api from '../services/api';
+  import { jwtDecode } from 'jwt-decode';
   
   export default {
     data() {
       return {
         teams: [],
+        isAdmin: false,
         apiUrl: process.env.VUE_APP_API_URL
       };
     },
@@ -28,6 +34,11 @@
       try {
         const response = await api.get('/teams');
         this.teams = response.data;
+        const token = localStorage.getItem('token');
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          this.isAdmin = decodedToken.role === 'admin';
+        }
       } catch (error) {
         console.error("Error al cargar la lista de equipos:", error);
         alert("No se pudo cargar la lista de equipos.");

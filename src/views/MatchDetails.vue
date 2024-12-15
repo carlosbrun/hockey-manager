@@ -63,6 +63,19 @@
           <MapComponent v-if="finalAddress" :address="finalAddress" />
           <a :href="getGoogleMapsLink(finalAddress)" target="_blank">Ver en Google Maps</a>
         </div>
+
+        <div v-if="match.instagram_post" class="instagram-preview box-data">
+          <h3>Instagram</h3>
+          <iframe 
+            :src="`https://www.instagram.com/p/${extractPostId(match.instagram_post)}/embed`" 
+            width="360px" 
+            height="500px"
+            frameborder="0" 
+            scrolling="no" 
+            allowtransparency="true"
+          ></iframe>
+        </div>
+
       </div>
       <!-- Tabla de Goles -->
       <div v-if="activeTab === 'goles'" class="tab-content goals-section">
@@ -211,6 +224,11 @@
             const encodedAddress = encodeURIComponent(address);
             const apiKey = 'AIzaSyD2-8A4YQjn3bJrv8dCetyeFQ0WQTLYbJQ'; // Asegúrate de reemplazar con tu API Key
             return `https://maps.googleapis.com/maps/api/staticmap?center=${encodedAddress}&zoom=15&size=300x200&maptype=roadmap&markers=color:red%7C${encodedAddress}&key=${apiKey}`;
+        },
+        extractPostId(url) {
+          const regex = /(?:https?:\/\/)?(?:www\.)?instagram\.com\/p\/([A-Za-z0-9-_]+)/;
+          const match = url.match(regex);
+          return match ? match[1] : null;
         }
     }
   };

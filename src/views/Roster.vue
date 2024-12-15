@@ -1,9 +1,11 @@
 <template>
   <div class="roster">
     <div class="header">
-      <h2>Plantilla</h2>
-      <div v-if="isAdmin">
-        <button @click="createPlayer">Crear Jugador</button>
+      <h2 class="header-title">Plantilla</h2>
+      <div class="header-buttons">
+        <button v-if="isAdmin" @click="createPlayer" class="create-button">
+          <span class="material-icons">add</span>
+        </button>
       </div>
     </div>
     <div class="player-cards">

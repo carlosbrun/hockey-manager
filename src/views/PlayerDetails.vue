@@ -25,8 +25,15 @@
     </div>
     <div class="player-details">
     <div class="header">
-      <h2>Detalles del Jugador</h2>
-      <button v-if="isAdmin" @click="editPlayer">Editar Jugador</button>
+      <h2 class="header-title">Detalles del Jugador</h2>
+      <div class="header-buttons">
+        <button v-if="isAdmin" @click="editPlayer" class="edit-button">
+          <span class="material-icons">edit</span>
+        </button>
+        <button v-if="isAdmin" @click="confirmDelete" class="delete-button">
+          <span class="material-icons">delete</span>
+        </button>
+      </div>
     </div>
     <div v-if="player" class="player-info box-data">
         <!-- Imagen del Jugador -->
@@ -115,6 +122,21 @@
       },
       getPlayerImage(photoPath) {
         return photoPath ? process.env.VUE_APP_API_URL + `${photoPath}` : process.env.VUE_APP_API_URL + `/uploads/players/default.png`;
+      },
+      confirmDelete() {
+        if (confirm('¿Estás seguro de que deseas eliminar este jugador? Esta acción no se puede deshacer.')) {
+          this.deleteTeam();
+        }
+      },
+      async deleteTeam() {
+        try {
+          await api.delete(`/players/${this.player.player_id}`);
+          alert('Jugador eliminado con éxito');
+          this.$router.push('/dashboard/roster');
+        } catch (error) {
+          console.error('Error al eliminar el jugador:', error);
+          alert('No se pudo eliminar el jugador');
+        }
       },
       editPlayer() {
         this.$router.push(`/players/edit/${this.player.player_id}`);
