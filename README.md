@@ -22,3 +22,16 @@ npm run lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+# backend
+
+# run backend server
+
+node .\app.js
+
+# push changes and publish in 
+
+rm -rf dist
+npm run build
+
+npx gh-pages -d dist

@@ -102,17 +102,28 @@ export default {
   methods: {
     async handleTeamSelection() {
       if (this.selectedTeam) {
-        try {
-          const token = localStorage.getItem('token'); // Usa el token si tu app está autenticada
-          await api.post('/myteams/select', { myteam_id: this.selectedTeam }, {
-              headers: { Authorization: `Bearer ${token}` }
-          });
-          // Navegar a la página del dashboard o clasificación después de seleccionar el equipo
+//        try {
+//          const token = localStorage.getItem('token'); // Usa el token si tu app está autenticada
+//          await api.post('/myteams/select', { myteam_id: this.selectedTeam }, {
+//              headers: { Authorization: `Bearer ${token}` }
+//          });
+//          // Navegar a la página del dashboard o clasificación después de seleccionar el equipo
+//          this.$router.push('/dashboard/standings');
+//        } catch (error) {
+//            console.error("Error al seleccionar el equipo:", error);
+//            alert("No se pudo seleccionar el equipo. Intenta de nuevo.");
+//        }
+      axios.post('/myteams/select', { myteam_id: this.selectedTeam })
+        .then(response => {
+          const newToken = response.data.token;
+          localStorage.setItem('token', newToken); // Guarda el token
+          console.log('Nuevo token recibido:', newToken);
           this.$router.push('/dashboard/standings');
-        } catch (error) {
-            console.error("Error al seleccionar el equipo:", error);
-            alert("No se pudo seleccionar el equipo. Intenta de nuevo.");
-        }
+        })
+        .catch(error => {
+          console.error('Error seleccionando equipo:', error);
+          alert("No se pudo seleccionar el equipo. Intenta de nuevo.");
+        });
       }
     },
     toggleCreateTeamForm() {

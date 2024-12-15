@@ -6,6 +6,8 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
+axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
+
 // Interceptor para incluir el token en cada solicitud
 api.interceptors.request.use(
   (config) => {
