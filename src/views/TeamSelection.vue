@@ -113,7 +113,7 @@ export default {
 //            console.error("Error al seleccionar el equipo:", error);
 //            alert("No se pudo seleccionar el equipo. Intenta de nuevo.");
 //        }
-      axios.post('/myteams/select', { myteam_id: this.selectedTeam })
+      api.post('/myteams/select', { myteam_id: this.selectedTeam })
         .then(response => {
           const newToken = response.data.token;
           localStorage.setItem('token', newToken); // Guarda el token
