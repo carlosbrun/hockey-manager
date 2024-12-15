@@ -92,6 +92,7 @@ router.post('/create', authorizeRole('admin'), (req, res) => {
         score_team_2 INTEGER,
         round_number INTEGER, 
         details TEXT,
+        instagram_post TEXT,
         FOREIGN KEY (team_1_id) REFERENCES teams(team_id),
         FOREIGN KEY (team_2_id) REFERENCES teams(team_id)
       );

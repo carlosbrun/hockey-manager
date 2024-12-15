@@ -181,6 +181,14 @@ router.delete('/:id', authorizeRole('admin'), (req, res) => {
   const { id } = req.params;
 
   try {
+    // Eliminar eventos del jugador
+    const deleteEvents = req.teamDb.prepare(`DELETE FROM match_events WHERE player_id = ?`);
+    const resultEvents = deleteEvents.run(id);
+
+    // Eliminar convocatorias del jugador
+    const deleteConvocations = req.teamDb.prepare(`DELETE FROM convocatorias WHERE player_id = ?`);
+    const resultConvocations = deleteConvocations.run(id);
+
     const query = `DELETE FROM players WHERE player_id = ?`;
     const deleteStmt = req.teamDb.prepare(query);
     const result = deleteStmt.run(id);

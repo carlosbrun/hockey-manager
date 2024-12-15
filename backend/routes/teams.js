@@ -55,6 +55,10 @@ router.get('/favorite', (req, res) => {
     if (!row) {
       return res.status(404).send("No se ha seleccionado un equipo favorito.");
     }
+
+    // Convertir `is_favorite` en booleano
+    row.is_favorite = !!row.is_favorite;
+
     res.status(200).json(row);
   } catch (err) {
     console.error("Error al obtener el equipo favorito:", err.message);
@@ -85,6 +89,14 @@ router.put('/:id', authorizeRole('admin'), upload.single('logo'), async (req, re
     const { name, city, abbreviation, phone, address, is_favorite } = req.body;
     let logoPath = null;
 
+    // Si se intenta marcar como favorito
+    if (is_favorite === '1') {
+      const existingFavorite = req.teamDb.prepare(`SELECT team_id FROM teams WHERE is_favorite = 1`).get();
+      if (existingFavorite && existingFavorite.team_id !== parseInt(teamId)) {
+        return res.status(400).send("Ya existe un equipo favorito. Desmarca el favorito actual antes de establecer otro.");
+      }
+    }
+
     if (req.file) {
       logoPath = path.join('uploads/badges', `${teamId}.png`);
       await sharp(req.file.buffer)
@@ -96,10 +108,12 @@ router.put('/:id', authorizeRole('admin'), upload.single('logo'), async (req, re
     const query = logoPath
       ? `UPDATE teams SET name = ?, city = ?, abbreviation = ?, logo_path = ?, phone = ?, address = ?, is_favorite = ? WHERE team_id = ?`
       : `UPDATE teams SET name = ?, city = ?, abbreviation = ?, phone = ?, address = ?, is_favorite = ? WHERE team_id = ?`;
-
-    const result = req.teamDb.prepare(query).run(
-      name, city, abbreviation, logoPath ? `/${logoPath}` : null, phone, address, is_favorite, teamId
-    );
+    
+    const params = logoPath
+      ? [name, city, abbreviation, `/${logoPath}`, phone, address, is_favorite, teamId]
+      : [name, city, abbreviation, phone, address, is_favorite, teamId];
+    
+    const result = req.teamDb.prepare(query).run(...params);
 
     if (result.changes === 0) {
       return res.status(404).send("Equipo no encontrado.");
@@ -115,6 +129,23 @@ router.put('/:id', authorizeRole('admin'), upload.single('logo'), async (req, re
 router.delete('/:id', authorizeRole('admin'), (req, res) => {
   try {
     const teamId = req.params.id;
+
+    // Eliminar eventos del partido
+    const deleteEvents = req.teamDb.prepare(`DELETE FROM match_events WHERE match_id in (select distinct(match_id) from matches where team_1_id = ? or team_2_id = ?)`);
+    const resultEvents = deleteEvents.run(teamId, teamId);
+
+    // Eliminar jugadores convocados del partido
+    const deleteConvocations = req.teamDb.prepare(`DELETE FROM convocatorias WHERE match_id in (select distinct(match_id) from matches where team_1_id = ? or team_2_id = ?)`);
+    const resultConvocations = deleteConvocations.run(teamId, teamId);
+
+    // Eliminar los partidos
+    const deleteMatch = req.teamDb.prepare(`DELETE FROM matches WHERE match_id in (select distinct(match_id) from matches where team_1_id = ? or team_2_id = ?)`);
+    const resultMatch = deleteMatch.run(teamId, teamId);
+
+    // Eliminar los partidos
+    const deletePlayer = req.teamDb.prepare(`DELETE FROM players WHERE team_id  = ?`);
+    const resultPlayer = deletePlayer.run(teamId);
+
     const result = req.teamDb.prepare(`DELETE FROM teams WHERE team_id = ?`).run(teamId);
 
     if (result.changes === 0) {

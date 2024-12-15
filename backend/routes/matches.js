@@ -7,15 +7,15 @@ router.use(connectMyTeamDb); // Aplica el middleware para conectar con la base d
 
 // Crear un nuevo partido
 router.post('/create', authorizeRole('admin'), (req, res) => {
-  const { team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details } = req.body;
+  const { team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details, instagram_post } = req.body;
 
   try {
     const query = `
-      INSERT INTO matches (team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO matches (team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details, instagram_post) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const insert = req.teamDb.prepare(query);
-    const result = insert.run(team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details);
+    const result = insert.run(team_1_id, team_2_id, date, location, score_team_1, score_team_2, round_number, details, instagram_post);
 
     res.status(201).send({ match_id: result.lastInsertRowid });
   } catch (err) {
@@ -27,7 +27,7 @@ router.post('/create', authorizeRole('admin'), (req, res) => {
 // Actualizar el resultado, fecha y/o número de jornada de un partido
 router.put('/update/:match_id', authorizeRole('admin'), (req, res) => {
   const { match_id } = req.params;
-  const { score_team_1, score_team_2, location, date, round_number, details } = req.body;
+  const { score_team_1, score_team_2, location, date, round_number, details, instagram_post } = req.body;
 
   // Validación: si uno de los puntajes está presente, el otro también debe estarlo
   const scoreTeam1Provided = score_team_1 !== undefined;
@@ -59,6 +59,15 @@ router.put('/update/:match_id', authorizeRole('admin'), (req, res) => {
   if (details) {
     fieldsToUpdate.push("details = ?");
     values.push(details);
+  }
+
+  if (instagram_post) {
+    if (!/^https?:\/\/(www\.)?instagram\.com\/p\/[A-Za-z0-9-_]+\/[A-Za-z0-9-_?=]+\/?$/.test(instagram_post)) {
+      return res.status(400).send("URL de Instagram no válida.");
+    } else {
+      fieldsToUpdate.push("instagram_post = ?");
+      values.push(instagram_post);
+    }
   }
 
   if (round_number !== undefined) {
