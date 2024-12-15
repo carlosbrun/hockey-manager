@@ -18,6 +18,7 @@ function connectMyTeamDb(req, res, next) {
       return res.status(403).send("Token inválido.");
     }
 
+    console.log("Token completo decodificado:", decoded);
     const myteam_id = decoded.myteam_id;
     console.log(`Token - myteam_id: ${decoded.myteam_id}`);
 
